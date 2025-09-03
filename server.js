@@ -1,0 +1,280 @@
+// server.js
+// Requisitos: Node 20+ (fetch nativo, confirmado como active em Setembro 2025)
+import express from 'express';
+import dotenv from 'dotenv';
+import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import rateLimit from 'express-rate-limit';  // Dep para rate limiting
+
+// ===== Inicialização =====
+dotenv.config(); // lê .env
+const app = express();
+app.use(express.json({ limit: '1mb' })); // evita payloads exagerados
+
+// ===== Rate Limiting (proteção contra abusos) =====
+const limiter = rateLimit({
+  windowMs: process.env.RATE_LIMIT_WINDOW || 60000,  // 1 min
+  max: process.env.RATE_LIMIT_MAX || 100,  // 100 reqs por janela
+  message: 'Muitas requisições; tente novamente mais tarde.',
+});
+app.use('/api/', limiter);  // Aplica em endpoints API
+
+// ===== CORS =====
+const rawOrigins = (process.env.CORS_ORIGIN || '').trim();
+if (rawOrigins) {
+  const allowed = rawOrigins.split(',').map(s => s.trim()).filter(Boolean);
+  app.use(
+    cors({
+      origin: (origin, cb) => {
+        if (!origin || allowed.includes(origin)) return cb(null, true);
+        return cb(new Error('Not allowed by CORS'));
+      },
+      methods: ['POST', 'GET', 'OPTIONS'],
+    })
+  );
+  app.options('*', cors());
+}
+
+// ===== Static (opcional) =====
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+app.use(express.static(path.join(__dirname, 'public')));
+
+// ===== Config xAI (via .env) =====
+const apiKey = process.env.XAI_API_KEY;
+const MODEL_JSON = process.env.XAI_MODEL_JSON || 'grok-4-0709';  // Grok-4 para raciocínio
+const MODEL_TEXT = process.env.XAI_MODEL_TEXT || 'grok-4-0709';
+if (!apiKey) {
+  console.warn('⚠️  XAI_API_KEY não definido. Configure no .env ou no painel do Render.');
+}
+
+// ===== Helpers =====
+function trunc(s, n) {
+  s = (s ?? '').toString();
+  return s.length > n ? s.slice(0, n) : s;
+}
+
+function enforceLimits(payload, limits) {
+  const out = { titles: [], descriptions: [], sitelinks: [], highlights: [] };
+  const t = Array.isArray(payload?.titles) ? payload.titles : [];
+  for (let i = 0; i < (limits?.titles?.count ?? 15); i++) {
+    out.titles[i] = trunc(t[i] ?? '', limits?.titles?.max ?? 30);
+  }
+  const d = Array.isArray(payload?.descriptions) ? payload.descriptions : [];
+  for (let i = 0; i < (limits?.descriptions?.count ?? 4); i++) {
+    out.descriptions[i] = trunc(d[i] ?? '', limits?.descriptions?.max ?? 90);
+  }
+  const s = Array.isArray(payload?.sitelinks) ? payload.sitelinks : [];
+  for (let i = 0; i < (limits?.sitelinks?.count ?? 4); i++) {
+    const item = s[i] || {};
+    out.sitelinks[i] = {
+      text:  trunc(item.text  ?? '', limits?.sitelinks?.text  ?? 25),
+      desc1: trunc(item.desc1 ?? '', limits?.sitelinks?.desc1 ?? 35),
+      desc2: trunc(item.desc2 ?? '', limits?.sitelinks?.desc2 ?? 35),
+    };
+  }
+  const h = Array.isArray(payload?.highlights) ? payload.highlights : [];
+  for (let i = 0; i < (limits?.highlights?.count ?? 8); i++) {
+    out.highlights[i] = trunc(h[i] ?? '', limits?.highlights?.max ?? 25);
+  }
+  return out;
+}
+
+// ===== Prompts (atualizado com políticas 2025) =====
+function promptFill(etapa1, limits) {
+  const {
+    productName, country, language,
+    productValue, productCurrency,
+    monetaryDiscount, discountCurrency,
+    percentageDiscount
+  } = (etapa1 || {});
+
+  return `
+Você é um redator especializado em Google Ads (2025), com foco em localização por país/idioma e conformidade com políticas do Google Ads 2025.
+
+OBJETIVO:
+Gerar ativos de anúncio (títulos, descrições, sitelinks e frases destaque) para o produto abaixo, no padrão de vendas do país e idioma informados. Textos criativos, claros, persuasivos e alinhados ao estilo Google Ads (sem apelação).
+
+REGRAS GERAIS (SIGA À RISCA):
+- Responda SOMENTE com um JSON VÁLIDO, sem texto antes ou depois.
+- Idioma de saída: ${language} (variante local de ${country}, ex: Português-BR para Brazil).
+- Adapte tom e vocabulário ao país/idioma.
+- Conformidade: políticas Google Ads 2025; evite promessas absolutas/enganosas, "Unfair Advantage" (sem vantagens injustas), conteúdo enganoso; promova transparência em anúncios; siga ethics em AI (updates Abril/Junho 2025 sobre third-party e auto-recomendações); sem emojis; no máx. 1 "!" por item.
+- Estilo Google Ads: benefício + proposta de valor + CTA moderado.
+- Use preço/descontos quando fizer sentido:
+  • Preço: ${productCurrency} ${productValue ?? 'n/a'}
+  • Desconto monetário: ${discountCurrency} ${monetaryDiscount ?? 'n/a'}
+  • Desconto percentual: ${percentageDiscount ?? 'n/a'}%
+- Varie os textos entre si e respeite exatamente os limites de caracteres.
+
+LIMITES:
+- titles: ${limits?.titles?.count ?? 15} itens, cada um ≤ ${limits?.titles?.max ?? 30} caracteres.
+- descriptions: ${limits?.descriptions?.count ?? 4} itens, cada um ≤ ${limits?.descriptions?.max ?? 90} caracteres.
+- sitelinks (${limits?.sitelinks?.count ?? 4} itens): text ≤ ${limits?.sitelinks?.text ?? 25}, desc1 ≤ ${limits?.sitelinks?.desc1 ?? 35}, desc2 ≤ ${limits?.sitelinks?.desc2 ?? 35}.
+- highlights: ${limits?.highlights?.count ?? 8} itens, cada um ≤ ${limits?.highlights?.max ?? 25} caracteres.
+
+FORMATO DE SAÍDA (JSON EXATO):
+{
+  "titles": string[${limits?.titles?.count ?? 15}],
+  "descriptions": string[${limits?.descriptions?.count ?? 4}],
+  "sitelinks": { "text": string, "desc1": string, "desc2": string }[${limits?.sitelinks?.count ?? 4}],
+  "highlights": string[${limits?.highlights?.count ?? 8}]
+}
+
+DADOS DO PRODUTO (ENTRADA):
+${JSON.stringify(etapa1, null, 2)}
+`.trim();
+}
+
+function promptVariant(etapa1, kind, index, limits) {
+  const limit = {
+    title: limits?.titles?.max ?? 30,
+    description: limits?.descriptions?.max ?? 90,
+    sitelink_text: limits?.sitelinks?.text ?? 25,
+    sitelink_desc1: limits?.sitelinks?.desc1 ?? 35,
+    sitelink_desc2: limits?.sitelinks?.desc2 ?? 35,
+    highlight: limits?.highlights?.max ?? 25
+  }[kind] || 90;
+
+  return `
+Você é um redator de Google Ads (2025). Gere APENAS UMA variação para "${kind}" (índice ${index}):
+- País: ${etapa1?.country} | Idioma: ${etapa1?.language} (variante local)
+- Limite: ≤ ${limit} caracteres
+- Estilo: benefício + valor + CTA moderado; sem violar políticas Google Ads 2025 (sem "Unfair Advantage", transparência, ethics AI); sem emojis; no máx. 1 "!"
+- Considere preço/descontos quando fizer sentido (${etapa1?.productCurrency} ${etapa1?.productValue}; ${etapa1?.discountCurrency} ${etapa1?.monetaryDiscount} / ${etapa1?.percentageDiscount}%)
+
+Saída: SOMENTE o texto final (sem aspas e sem JSON).
+Produto: ${etapa1?.productName}
+`.trim();
+}
+
+// ===== Chamada xAI API (compatível com OpenAI, otimizada) =====
+async function chamarLLMJson(prompt, retries = 3) {
+  if (!apiKey) throw new Error('XAI_API_KEY ausente');
+  let attempt = 0;
+  while (attempt < retries) {
+    try {
+      const r = await fetch('https://api.x.ai/v1/chat/completions', {  // Endpoint xAI
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: MODEL_JSON,
+          temperature: 0.2,
+          max_tokens: 2000,
+          response_format: { type: 'json_object' },
+          messages: [
+            { role: 'system', content: 'Responda sempre de forma objetiva, conforme políticas Google Ads 2025.' },
+            { role: 'user', content: prompt }
+          ]
+        })
+      });
+      if (!r.ok) {
+        const errTxt = await r.text().catch(() => '');
+        throw new Error(`xAI erro: ${r.status} ${errTxt}`);
+      }
+      const data = await r.json();
+      const content = data?.choices?.[0]?.message?.content;
+      if (!content) throw new Error('LLM sem conteúdo');
+
+      try {
+        return JSON.parse(content);
+      } catch {
+        const match = content.match(/\{[\s\S]*\}$/);
+        if (!match) throw new Error('Resposta da IA não é JSON válido');
+        return JSON.parse(match[0]);
+      }
+    } catch (err) {
+      attempt++;
+      console.error(`Retry ${attempt}/${retries} para LLMJson: ${err.message}`);
+      if (attempt === retries) throw err;
+    }
+  }
+}
+
+async function chamarLLMText(prompt, retries = 3) {
+  if (!apiKey) throw new Error('XAI_API_KEY ausente');
+  let attempt = 0;
+  while (attempt < retries) {
+    try {
+      const r = await fetch('https://api.x.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: MODEL_TEXT,
+          temperature: 0.5,
+          max_tokens: 500,
+          messages: [
+            { role: 'system', content: 'Responda apenas com o texto pedido, sem aspas.' },
+            { role: 'user', content: prompt }
+          ]
+        })
+      });
+      if (!r.ok) {
+        const errTxt = await r.text().catch(() => '');
+        throw new Error(`xAI erro: ${r.status} ${errTxt}`);
+      }
+      const data = await r.json();
+      const content = data?.choices?.[0]?.message?.content?.trim();
+      if (!content) throw new Error('LLM sem conteúdo');
+      return content;
+    } catch (err) {
+      attempt++;
+      console.error(`Retry ${attempt}/${retries} para LLMText: ${err.message}`);
+      if (attempt === retries) throw err;
+    }
+  }
+}
+
+// ===== Endpoints =====
+app.post('/api/ai-fill', async (req, res) => {
+  try {
+    const { etapa1, limits } = req.body || {};
+    if (!etapa1?.productName) return res.status(400).json({ error: 'FALTAM_DADOS', field: 'productName' });
+
+    const payload = await chamarLLMJson(promptFill(etapa1, limits));
+    const safe = enforceLimits(payload, limits);
+    res.type('text/plain').send(JSON.stringify(safe));
+  } catch (err) {
+    console.error('AI_FILL_FAIL:', err.message);
+    res.status(500).json({ error: 'AI_FILL_FAIL', detail: err.message });
+  }
+});
+
+app.post('/api/ai-variant', async (req, res) => {
+  try {
+    const { etapa1, kind, index, limits } = req.body || {};
+    if (!etapa1?.productName) return res.status(400).json({ error: 'FALTAM_DADOS', field: 'productName' });
+
+    const text = await chamarLLMText(promptVariant(etapa1, kind, index, limits));
+    const maxByKind = {
+      title: limits?.titles?.max ?? 30,
+      description: limits?.descriptions?.max ?? 90,
+      sitelink_text: limits?.sitelinks?.text ?? 25,
+      sitelink_desc1: limits?.sitelinks?.desc1 ?? 35,
+      sitelink_desc2: limits?.sitelinks?.desc2 ?? 35,
+      highlight: limits?.highlights?.max ?? 25
+    }[kind] || 90;
+
+    res.type('text/plain').send(trunc(text, maxByKind));
+  } catch (err) {
+    console.error('AI_VARIANT_FAIL:', err.message);
+    res.status(500).json({ error: 'AI_VARIANT_FAIL', detail: err.message });
+  }
+});
+
+// ===== Healthcheck =====
+app.get('/health', (_req, res) => {
+  res.json({
+    ok: true,
+    model_json: MODEL_JSON,
+    model_text: MODEL_TEXT,
+    cors_enabled: Boolean(rawOrigins),
+  });
+});
+
+// ===== Start =====
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`✅ Servidor rodando em http://localhost:${PORT}`);
+});
