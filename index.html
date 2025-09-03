@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Produto de Afiliado - Etapas 1 e 2</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .card-shadow{box-shadow:0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -1px rgba(0,0,0,.06)}
+    .label{font-weight:600;color:#374151}
+    select{cursor:pointer}
+    textarea{resize:vertical}
+
+    /* Toolbar / Botões */
+    .ai-wrap{position:relative}
+    .ai-toolbar{position:absolute;top:.35rem;right:.35rem;display:flex;align-items:center;gap:.75rem;z-index:1}
+    .with-toolbar{padding-right:5.25rem}
+    .ai-field{background:#F9FAFB}
+    .icon-btn{width:2rem;height:2rem;display:flex;align-items:center;justify-content:center;border:1px solid #D1D5DB;border-radius:.375rem;background:#fff;transition:background-color .15s ease}
+    .icon-btn:hover{background:#F9FAFB}
+    .icon-btn:active{background:#F3F4F6}
+    .icon-btn svg{width:1rem;height:1rem;stroke:currentColor}
+
+    /* Toast */
+    .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:1rem;background:#111827;color:#fff;padding:.5rem .75rem;border-radius:.5rem;font-size:.875rem;box-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -2px rgba(0,0,0,.05);opacity:0;pointer-events:none;transition:opacity .2s ease, transform .2s ease}
+    .toast.show{opacity:1;transform:translate(-50%,-6px)}
+  </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-4">
+  <div class="max-w-6xl mx-auto space-y-10">
+    <!-- Etapa 1 -->
+    <section class="bg-white rounded-lg card-shadow p-6">
+      <h1 class="text-2xl font-bold text-center text-gray-800 mb-6">
+        Etapa 1 - Inserir Informações do Produto de Afiliado
+      </h1>
+
+      <form id="productForm" class="space-y-4">
+        <div>
+          <label for="productName" class="block label mb-2">Nome do Produto</label>
+          <input id="productName" name="productName" type="text" required placeholder="Ex: Air Fryer Pro"
+                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"/>
+        </div>
+
+        <div>
+          <label for="country" class="block label mb-2">País</label>
+          <select id="country" name="country" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            <option value="">Selecione um país</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="language" class="block label mb-2">Idioma</label>
+          <select id="language" name="language" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            <option value="">Selecione um idioma</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block label mb-2">Valor do Produto</label>
+          <div class="flex space-x-2">
+            <input id="productValue" name="productValue" type="number" step="0.01" min="0" required placeholder="Ex: 99.99"
+                   class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"/>
+            <select id="productCurrency" name="productCurrency" required
+                    class="w-32 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"></select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block label mb-2">Desconto Monetário</label>
+          <div class="flex space-x-2">
+            <input id="monetaryDiscount" name="monetaryDiscount" type="number" step="0.01" min="0" required placeholder="Ex: 10.00"
+                   class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"/>
+            <select id="discountCurrency" name="discountCurrency" required
+                    class="w-32 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"></select>
+          </div>
+        </div>
+
+        <div>
+          <label for="percentageDiscount" class="block label mb-2">Desconto Percentual</label>
+          <div class="relative">
+            <!-- sem limite máximo -->
+            <input id="percentageDiscount" name="percentageDiscount" type="number" min="0" required placeholder="Ex: 20"
+                   class="w-full px-3 py-2 pr-8 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"/>
+            <span class="absolute right-3 top-2 text-gray-500">%</span>
+          </div>
+        </div>
+
+        <!-- Botão "Novo" permanece na Etapa 1 -->
+        <button id="newBtn" type="button"
+                class="w-full mt-2 bg-white text-gray-800 py-2 px-4 rounded-md border border-gray-300 hover:bg-gray-50 focus:ring-2 focus:ring-gray-300 transition">
+          Novo
+        </button>
+      </form>
+    </section>
+
+    <!-- Etapa 2 -->
+    <section class="bg-white rounded-lg card-shadow p-6">
+      <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">
+        Etapa 2 - Google Ads | Preenchimento
+      </h2>
+
+      <div class="space-y-6">
+        <div class="text-center">
+          <button id="fillBtn" type="button"
+                  class="bg-green-600 text-white py-2 px-6 rounded-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 transition">
+            Preencher com IA
+          </button>
+        </div>
+
+        <div>
+          <h3 class="font-semibold mb-2">Títulos (máx 30 caracteres)</h3>
+          <div id="titlesContainer" class="grid grid-cols-1 sm:grid-cols-3 gap-3 max-h-96 overflow-y-auto"></div>
+        </div>
+
+        <div>
+          <h3 class="font-semibold mb-2">Descrições (máx 90 caracteres)</h3>
+          <div id="descriptionsContainer" class="space-y-2 max-h-64 overflow-y-auto"></div>
+        </div>
+
+        <div>
+          <h3 class="font-semibold mb-2">Sitelinks</h3>
+          <div id="sitelinksContainer" class="space-y-6 max-h-96 overflow-y-auto"></div>
+        </div>
+
+        <div>
+          <h3 class="font-semibold mb-2">Frases destaque (máx 25 caracteres)</h3>
+          <div id="highlightsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-64 overflow-y-auto"></div>
+        </div>
+
+        <!-- Botão Salvar Produto (MOVIDO para o final da Etapa 2) -->
+        <button id="saveBtn" type="button"
+                class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 transition">
+          Salvar Produto
+        </button>
+      </div>
+    </section>
+
+    <!-- Histórico -->
+    <section class="bg-white rounded-lg card-shadow p-6">
+      <h2 class="text-2xl font-bold text-gray-800 mb-4">Histórico de Produtos</h2>
+      <p class="text-sm text-gray-600 mb-4">Clique para carregar o último dado salvo. Itens mais recentes aparecem primeiro.</p>
+      <div id="historyList" class="space-y-3"></div>
+    </section>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    /* ===== Listas (mantidas — use as suas completas se desejar) ===== */
+    const countries = ["Afghanistan","Albania","Algeria","Andorra","Angola","Argentina","Armenia","Australia","Austria","Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bhutan","Bolivia","Brazil","Brunei","Bulgaria","Burkina Faso","Burundi","Cambodia","Cameroon","Canada","Cape Verde","Chile","China","Colombia","Costa Rica","Croatia","Cuba","Cyprus","Czech Republic","Denmark","Dominican Republic","Ecuador","Egypt","El Salvador","Estonia","Ethiopia","Finland","France","Germany","Greece","Guatemala","Honduras","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Jamaica","Japan","Jordan","Kazakhstan","Kenya","Kuwait","Latvia","Lebanon","Lithuania","Luxembourg","Madagascar","Malaysia","Maldives","Mali","Malta","Mexico","Monaco","Mongolia","Montenegro","Morocco","Mozambique","Nepal","Netherlands","New Zealand","Nicaragua","Nigeria","North Korea","Norway","Oman","Pakistan","Panama","Paraguay","Peru","Philippines","Poland","Portugal","Qatar","Romania","Russia","Rwanda","San Marino","Saudi Arabia","Senegal","Serbia","Singapore","Slovakia","Slovenia","South Africa","South Korea","Spain","Sri Lanka","Sweden","Switzerland","Syria","Taiwan","Tanzania","Thailand","Tunisia","Turkey","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Uzbekistan","Venezuela","Vietnam","Yemen","Zambia","Zimbabwe"];
+    const languages = ["Afrikaans","Albanian","Amharic","Arabic","Armenian","Azerbaijani","Basque","Belarusian","Bengali","Bosnian","Bulgarian","Burmese","Catalan","Chinese","Croatian","Czech","Danish","Dutch","English","Estonian","Filipino","Finnish","French","Galician","Georgian","German","Greek","Gujarati","Haitian Creole","Hebrew","Hindi","Hungarian","Icelandic","Indonesian","Irish","Italian","Japanese","Javanese","Kannada","Kazakh","Khmer","Korean","Kurdish","Lao","Latvian","Lithuanian","Macedonian","Malay","Malayalam","Maltese","Maori","Marathi","Mongolian","Nepali","Norwegian","Pashto","Persian","Polish","Portuguese","Punjabi","Romanian","Russian","Serbian","Sinhala","Slovak","Slovenian","Somali","Spanish","Sundanese","Swahili","Swedish","Tajik","Tamil","Telugu","Thai","Turkish","Turkmen","Ukrainian","Urdu","Uzbek","Vietnamese","Welsh","Xhosa","Yiddish","Yoruba","Zulu"];
+    const currencies = [
+      {value:"BRL", text:"BRL (R$)"},{value:"USD", text:"USD ($)"},{value:"EUR", text:"EUR (€)"},{value:"GBP", text:"GBP (£)"},
+      {value:"JPY", text:"JPY (¥)"},{value:"CNY", text:"CNY (¥)"},{value:"AUD", text:"AUD (A$)"},{value:"CAD", text:"CAD (C$)"},
+      {value:"CHF", text:"CHF (CHF)"},{value:"ARS", text:"ARS ($)"},{value:"CLP", text:"CLP ($)"},{value:"MXN", text:"MXN ($)"},
+      {value:"INR", text:"INR (₹)"},{value:"RUB", text:"RUB (₽)"},{value:"KRW", text:"KRW (₩)"},{value:"ZAR", text:"ZAR (R)"},
+      {value:"SEK", text:"SEK (kr)"},{value:"NOK", text:"NOK (kr)"},{value:"DKK", text:"DKK (kr)"},{value:"PLN", text:"PLN (zł)"},
+      {value:"TRY", text:"TRY (₺)"},{value:"AED", text:"AED (د.إ)"},{value:"SAR", text:"SAR (﷼)"}
+    ];
+
+    /* =================== População Etapa 1 =================== */
+    const countrySelect = document.getElementById("country");
+    countries.forEach(c=>{const o=document.createElement("option");o.value=c;o.textContent=c;countrySelect.appendChild(o);});
+    const languageSelect = document.getElementById("language");
+    languages.forEach(l=>{const o=document.createElement("option");o.value=l;o.textContent=l;languageSelect.appendChild(o);});
+    const productCurrencySelect = document.getElementById("productCurrency");
+    const discountCurrencySelect = document.getElementById("discountCurrency");
+    currencies.forEach(cur=>{
+      const o1=document.createElement("option");o1.value=cur.value;o1.textContent=cur.text;productCurrencySelect.appendChild(o1);
+      const o2=document.createElement("option");o2.value=cur.value;o2.textContent=cur.text;discountCurrencySelect.appendChild(o2);
+    });
+    productCurrencySelect.addEventListener("change",()=>{discountCurrencySelect.value=productCurrencySelect.value;});
+
+    /* =================== UI Util =================== */
+    const toastEl = document.getElementById('toast');
+    function showToast(msg){toastEl.textContent=msg;toastEl.classList.add('show');setTimeout(()=>toastEl.classList.remove('show'),1600);}
+
+    function createSvgCopy(){
+      const s=document.createElementNS("http://www.w3.org/2000/svg","svg");
+      s.setAttribute("viewBox","0 0 24 24"); s.setAttribute("fill","none"); s.setAttribute("stroke","currentColor");
+      s.innerHTML='<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>';
+      return s;
+    }
+    function createSvgRefresh(){
+      const s=document.createElementNS("http://www.w3.org/2000/svg","svg");
+      s.setAttribute("viewBox","0 0 24 24"); s.setAttribute("fill","none"); s.setAttribute("stroke","currentColor");
+      s.innerHTML='<polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.13-3.36L23 10"></path><path d="M20.49 15a9 9 0 0 1-14.13 3.36L1 14"></path>';
+      return s;
+    }
+    function attachToolbar(fieldEl, meta){
+      fieldEl.classList.add('with-toolbar','ai-field');
+      fieldEl.readOnly = true;
+      const wrap=document.createElement('div'); wrap.className='ai-wrap';
+      fieldEl.parentNode.insertBefore(wrap, fieldEl); wrap.appendChild(fieldEl);
+      const bar=document.createElement('div'); bar.className='ai-toolbar'; wrap.appendChild(bar);
+
+      const btnCopy=document.createElement('button'); btnCopy.type='button'; btnCopy.className='icon-btn'; btnCopy.title='Copiar';
+      btnCopy.dataset.action='copy'; Object.assign(btnCopy.dataset, meta); btnCopy.appendChild(createSvgCopy()); bar.appendChild(btnCopy);
+
+      const btnRefresh=document.createElement('button'); btnRefresh.type='button'; btnRefresh.className='icon-btn'; btnRefresh.title='Nova variação';
+      btnRefresh.dataset.action='refresh'; Object.assign(btnRefresh.dataset, meta); btnRefresh.appendChild(createSvgRefresh()); bar.appendChild(btnRefresh);
+    }
+
+    /* =================== Containers Etapa 2 =================== */
+    const titlesContainer = document.getElementById("titlesContainer");
+    const descriptionsContainer = document.getElementById("descriptionsContainer");
+    const sitelinksContainer = document.getElementById("sitelinksContainer");
+    const highlightsContainer = document.getElementById("highlightsContainer");
+
+    // Títulos (15)
+    for(let i=1;i<=15;i++){
+      const input=document.createElement("input");
+      input.type="text"; input.maxLength=30; input.placeholder=`Título ${i}`;
+      input.className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500";
+      titlesContainer.appendChild(input);
+      attachToolbar(input,{kind:'title',index:String(i-1)});
+    }
+    // Descrições (4)
+    for(let i=1;i<=4;i++){
+      const ta=document.createElement("textarea");
+      ta.maxLength=90; ta.rows=2; ta.placeholder=`Descrição ${i}`;
+      ta.className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500";
+      descriptionsContainer.appendChild(ta);
+      attachToolbar(ta,{kind:'description',index:String(i-1)});
+    }
+    // Sitelinks (4 x 3)
+    for(let i=1;i<=4;i++){
+      const group=document.createElement("div");
+      group.className="border border-gray-300 rounded-md p-4 space-y-2";
+      const h=document.createElement("h4"); h.textContent=`Sitelink ${i}`; h.className="font-semibold"; group.appendChild(h);
+
+      const t=document.createElement("input"); t.type="text"; t.maxLength=25; t.placeholder="Texto do sitelink";
+      t.className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"; group.appendChild(t);
+      attachToolbar(t,{kind:'sitelink_text',index:String(i-1)});
+
+      const d1=document.createElement("input"); d1.type="text"; d1.maxLength=35; d1.placeholder="Linha de descrição 1";
+      d1.className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"; group.appendChild(d1);
+      attachToolbar(d1,{kind:'sitelink_desc1',index:String(i-1)});
+
+      const d2=document.createElement("input"); d2.type="text"; d2.maxLength=35; d2.placeholder="Linha de descrição 2";
+      d2.className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"; group.appendChild(d2);
+      attachToolbar(d2,{kind:'sitelink_desc2',index:String(i-1)});
+
+      sitelinksContainer.appendChild(group);
+    }
+    // Destaques (8)
+    for(let i=1;i<=8;i++){
+      const input=document.createElement("input");
+      input.type="text"; input.maxLength=25; input.placeholder=`Frase destaque ${i}`;
+      input.className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500";
+      highlightsContainer.appendChild(input);
+      attachToolbar(input,{kind:'highlight',index:String(i-1)});
+    }
+
+    /* =================== IA (Back-end) =================== */
+    // Limites exatos (mantidos no front para truncar defensivamente)
+    const LIMITS = {
+      titles: { count: 15, max: 30 },
+      descriptions: { count: 4, max: 90 },
+      sitelinks: { count: 4, text: 25, desc1: 35, desc2: 35 },
+      highlights: { count: 8, max: 25 }
+    };
+    const KIND_LIMIT = {
+      title: LIMITS.titles.max,
+      description: LIMITS.descriptions.max,
+      sitelink_text: LIMITS.sitelinks.text,
+      sitelink_desc1: LIMITS.sitelinks.desc1,
+      sitelink_desc2: LIMITS.sitelinks.desc2,
+      highlight: LIMITS.highlights.max
+    };
+    function trunc(s, n){ s = (s ?? '').toString(); return s.length > n ? s.slice(0, n) : s; }
+
+    // Normaliza Etapa 1 e calcula % se estiver vazio
+    function normalizeEtapa1(){
+      const raw = getFormEtapa1();
+      const pv = parseFloat(raw.productValue);
+      const md = parseFloat(raw.monetaryDiscount);
+      let pct = parseFloat(raw.percentageDiscount);
+      if (isFinite(pv) && pv > 0 && isFinite(md) && md >= 0 && (!isFinite(pct) || pct <= 0)) {
+        pct = (md / pv) * 100;
+      }
+      return {
+        productName: raw.name || '',
+        country: raw.country || '',
+        language: raw.language || '',
+        productValue: isFinite(pv) ? pv : null,
+        productCurrency: raw.productCurrency || '',
+        monetaryDiscount: isFinite(md) ? md : null,
+        discountCurrency: raw.discountCurrency || raw.productCurrency || '',
+        percentageDiscount: isFinite(pct) ? Number(pct.toFixed(2)) : null
+      };
+    }
+
+    // Aplica no DOM com truncamento defensivo
+    function applyGenerated(g){
+      const tInputs = titlesContainer.querySelectorAll("input");
+      const titles = Array.isArray(g.titles) ? g.titles.slice(0, LIMITS.titles.count) : [];
+      tInputs.forEach((el, i) => el.value = trunc(titles[i] || '', LIMITS.titles.max));
+
+      const dInputs = descriptionsContainer.querySelectorAll("textarea");
+      const descriptions = Array.isArray(g.descriptions) ? g.descriptions.slice(0, LIMITS.descriptions.count) : [];
+      dInputs.forEach((el, i) => el.value = trunc(descriptions[i] || '', LIMITS.descriptions.max));
+
+      const groups = sitelinksContainer.querySelectorAll("div.border");
+      const sl = Array.isArray(g.sitelinks) ? g.sitelinks.slice(0, LIMITS.sitelinks.count) : [];
+      groups.forEach((grp, i) => {
+        const ins = grp.querySelectorAll("input");
+        const item = sl[i] || {};
+        if (ins[0]) ins[0].value = trunc(item.text || '', LIMITS.sitelinks.text);
+        if (ins[1]) ins[1].value = trunc(item.desc1 || '', LIMITS.sitelinks.desc1);
+        if (ins[2]) ins[2].value = trunc(item.desc2 || '', LIMITS.sitelinks.desc2);
+      });
+
+      const hInputs = highlightsContainer.querySelectorAll("input");
+      const highlights = Array.isArray(g.highlights) ? g.highlights.slice(0, LIMITS.highlights.count) : [];
+      hInputs.forEach((el, i) => el.value = trunc(highlights[i] || '', LIMITS.highlights.max));
+    }
+
+    async function callAiFill(){
+      const etapa1 = normalizeEtapa1();
+      if(!etapa1.productName){
+        alert("Por favor, preencha o Nome do Produto na Etapa 1 antes de preencher a Etapa 2.");
+        return;
+      }
+      const r = await fetch('/api/ai-fill', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ etapa1, limits: LIMITS })
+      });
+      if (!r.ok) { alert('Falha ao chamar IA.'); return; }
+      const txt = await r.text();
+      const match = txt.match(/\{[\s\S]*\}$/); // extrai somente JSON
+      if (!match) { alert('Resposta inválida da IA.'); return; }
+      const data = JSON.parse(match[0]);
+      applyGenerated(data);
+      showToast("Campos preenchidos com IA");
+    }
+
+    async function callAiVariant(kind, index){
+      const etapa1 = normalizeEtapa1();
+      const limit = KIND_LIMIT[kind] || 90;
+      const r = await fetch('/api/ai-variant', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ etapa1, limits: LIMITS, kind, index: Number(index || 0) })
+      });
+      if (!r.ok) { showToast('Falha ao gerar variação'); return ''; }
+      let s = await r.text();
+      s = s.replace(/^"|"$/g,''); // caso venha com aspas
+      return trunc(s, limit);
+    }
+
+    /* =================== Preencher tudo (IA) =================== */
+    document.getElementById("fillBtn").addEventListener("click", callAiFill);
+
+    // Delegação Copy / Refresh (Refresh agora chama IA de variação)
+    document.addEventListener('click', async (e)=>{
+      const btn=e.target.closest('button.icon-btn'); if(!btn) return;
+      const action=btn.dataset.action, kind=btn.dataset.kind, index=btn.dataset.index;
+      const wrap=btn.closest('.ai-wrap'); if(!wrap) return;
+      const field=wrap.querySelector('input, textarea'); if(!field) return;
+      if(action==='copy'){
+        try{await navigator.clipboard.writeText(field.value||""); showToast("Copiado!");}
+        catch{showToast("Não foi possível copiar");}
+      }
+      if(action==='refresh'){
+        const etapa1 = normalizeEtapa1();
+        if(!etapa1.productName){ showToast("Preencha a Etapa 1 antes de atualizar"); return; }
+        const v = await callAiVariant(kind, index);
+        if (v) { field.value = v; showToast("Campo atualizado"); }
+      }
+    });
+
+    /* =================== HISTÓRICO (LocalStorage) =================== */
+    const LS_KEY = 'productHistoryV1';
+
+    function slugifyName(name){
+      return name.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+    }
+    function loadHistory(){
+      try{ return JSON.parse(localStorage.getItem(LS_KEY)) || []; }catch{ return []; }
+    }
+    function saveHistory(arr){
+      localStorage.setItem(LS_KEY, JSON.stringify(arr));
+    }
+
+    function getFormEtapa1(){
+      return {
+        name: document.getElementById("productName").value.trim(),
+        country: document.getElementById("country").value,
+        language: document.getElementById("language").value,
+        productValue: document.getElementById("productValue").value,
+        productCurrency: document.getElementById("productCurrency").value,
+        monetaryDiscount: document.getElementById("monetaryDiscount").value,
+        discountCurrency: document.getElementById("discountCurrency").value,
+        percentageDiscount: document.getElementById("percentageDiscount").value,
+      };
+    }
+    function getSnapshotEtapa2(){
+      const titles = Array.from(titlesContainer.querySelectorAll("input")).map(i=>i.value||"");
+      const descriptions = Array.from(descriptionsContainer.querySelectorAll("textarea")).map(i=>i.value||"");
+      const sitelinks = Array.from(sitelinksContainer.querySelectorAll("div.border")).map(div=>{
+        const ins=div.querySelectorAll("input");
+        return { text:ins[0]?.value||"", desc1:ins[1]?.value||"", desc2:ins[2]?.value||"" };
+      });
+      const highlights = Array.from(highlightsContainer.querySelectorAll("input")).map(i=>i.value||"");
+      return { titles, descriptions, sitelinks, highlights };
+    }
+    function applyEtapa1(data){
+      document.getElementById("productName").value = data.name || "";
+      document.getElementById("country").value = data.country || "";
+      document.getElementById("language").value = data.language || "";
+      document.getElementById("productValue").value = data.productValue || "";
+      document.getElementById("productCurrency").value = data.productCurrency || "";
+      document.getElementById("monetaryDiscount").value = data.monetaryDiscount || "";
+      document.getElementById("discountCurrency").value = data.discountCurrency || "";
+      document.getElementById("percentageDiscount").value = data.percentageDiscount || "";
+      computePercent(); // recalcula
+    }
+    function applyEtapa2(snap){
+      const tInputs=titlesContainer.querySelectorAll("input");
+      snap.titles?.forEach((v,i)=>{ if(tInputs[i]) tInputs[i].value=v; });
+      const dInputs=descriptionsContainer.querySelectorAll("textarea");
+      snap.descriptions?.forEach((v,i)=>{ if(dInputs[i]) dInputs[i].value=v; });
+      const groups=sitelinksContainer.querySelectorAll("div.border");
+      snap.sitelinks?.forEach((s,i)=>{
+        const ins=groups[i]?.querySelectorAll("input");
+        if(ins && ins.length>=3){ ins[0].value=s.text||""; ins[1].value=s.desc1||""; ins[2].value=s.desc2||""; }
+      });
+      const hInputs=highlightsContainer.querySelectorAll("input");
+      snap.highlights?.forEach((v,i)=>{ if(hInputs[i]) hInputs[i].value=v; });
+    }
+
+    function saveProductToHistory(){
+      const etapa1 = getFormEtapa1();
+      if(!etapa1.name){
+        alert("Informe o Nome do Produto.");
+        return false;
+      }
+      const etapa2 = getSnapshotEtapa2();
+      const ts = Date.now();
+      const id = slugifyName(etapa1.name);
+
+      const hist = loadHistory();
+      const idx = hist.findIndex(p=>p.id===id);
+      const version = { ts, etapa1, etapa2 };
+
+      if(idx>=0){
+        hist[idx].versions.push(version);
+        hist[idx].lastTs = ts;
+        hist[idx].displayName = etapa1.name;
+      }else{
+        hist.push({ id, displayName: etapa1.name, lastTs: ts, versions:[version] });
+      }
+      hist.sort((a,b)=>b.lastTs - a.lastTs);
+      saveHistory(hist);
+      renderHistory();
+      return true;
+    }
+
+    function renderHistory(){
+      const cont = document.getElementById("historyList");
+      const hist = loadHistory();
+      cont.innerHTML = "";
+      if(hist.length===0){
+        const empty = document.createElement("div");
+        empty.className="text-gray-500 text-sm";
+        empty.textContent="Nenhum produto salvo ainda.";
+        cont.appendChild(empty);
+        return;
+      }
+      hist.forEach(item=>{
+        const last = item.versions[item.versions.length-1];
+        const card = document.createElement("div");
+        card.className="border border-gray-200 rounded-lg p-4 flex items-center justify-between";
+        const left = document.createElement("div");
+        left.innerHTML = `
+          <div class="font-semibold text-gray-800">${item.displayName}</div>
+          <div class="text-xs text-gray-500">Atualizado em ${new Date(item.lastTs).toLocaleString()}</div>
+          <div class="text-xs text-gray-500">Versões: ${item.versions.length}</div>
+        `;
+        const right = document.createElement("div");
+        right.className="flex gap-2";
+        const btnLoad = document.createElement("button");
+        btnLoad.className="px-3 py-1.5 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-sm";
+        btnLoad.textContent="Carregar último";
+        btnLoad.addEventListener("click", ()=>{
+          applyEtapa1(last.etapa1);
+          applyEtapa2(last.etapa2);
+          showToast("Produto carregado do histórico");
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        const btnDelete = document.createElement("button");
+        btnDelete.className="px-3 py-1.5 rounded-md border border-red-300 text-red-700 bg-white hover:bg-red-50 text-sm";
+        btnDelete.textContent="Excluir";
+        btnDelete.addEventListener("click", ()=>{
+          const arr=loadHistory().filter(p=>p.id!==item.id);
+          saveHistory(arr);
+          renderHistory();
+          showToast("Produto removido do histórico");
+        });
+
+        right.appendChild(btnLoad);
+        right.appendChild(btnDelete);
+        card.appendChild(left);
+        card.appendChild(right);
+        cont.appendChild(card);
+      });
+    }
+
+    // Submissão (continua igual): handler no form
+    document.getElementById("productForm").addEventListener("submit", (e)=>{
+      e.preventDefault();
+      if(saveProductToHistory()){
+        showToast("Produto salvo no histórico");
+      }
+    });
+
+    // Botão "Salvar Produto" no final da Etapa 2 dispara a submissão do form (mantém validação nativa)
+    document.getElementById("saveBtn").addEventListener("click", ()=>{
+      const form = document.getElementById("productForm");
+      if (form.requestSubmit) form.requestSubmit();
+      else form.dispatchEvent(new Event('submit', {cancelable:true}));
+    });
+
+    // ====== NOVO (limpar tudo) ======
+    document.getElementById("newBtn").addEventListener("click", ()=>{
+      // Limpa Etapa 1
+      document.getElementById("productName").value = "";
+      document.getElementById("country").value = "";
+      document.getElementById("language").value = "";
+      document.getElementById("productValue").value = "";
+      document.getElementById("productCurrency").selectedIndex = 0;
+      document.getElementById("monetaryDiscount").value = "";
+      document.getElementById("discountCurrency").value = document.getElementById("productCurrency").value;
+      document.getElementById("percentageDiscount").value = "";
+
+      // Limpa Etapa 2
+      titlesContainer.querySelectorAll("input").forEach(el=>el.value="");
+      descriptionsContainer.querySelectorAll("textarea").forEach(el=>el.value="");
+      sitelinksContainer.querySelectorAll("div.border").forEach(div=>{
+        div.querySelectorAll("input").forEach(el=>el.value="");
+      });
+      highlightsContainer.querySelectorAll("input").forEach(el=>el.value="");
+
+      showToast("Novo produto: campos limpos");
+    });
+
+    // ====== CÁLCULO AUTOMÁTICO DO DESCONTO % (sem limite) ======
+    const productValueEl = document.getElementById("productValue");
+    const monetaryDiscountEl = document.getElementById("monetaryDiscount");
+    const percentageEl = document.getElementById("percentageDiscount");
+
+    function computePercent(){
+      const pv = parseFloat(productValueEl.value);
+      const md = parseFloat(monetaryDiscountEl.value);
+      if(!isFinite(pv) || pv <= 0 || !isFinite(md) || md < 0){
+        percentageEl.value = "";
+        return;
+      }
+      const pct = (md / pv) * 100;
+      percentageEl.value = isFinite(pct) ? pct.toFixed(2) : "";
+    }
+    productValueEl.addEventListener("input", computePercent);
+    monetaryDiscountEl.addEventListener("input", computePercent);
+
+    // Inicializa histórico
+    renderHistory();
+  </script>
+</body>
+</html>
